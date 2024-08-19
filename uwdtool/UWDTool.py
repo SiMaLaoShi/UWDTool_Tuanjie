@@ -54,9 +54,13 @@ class UnityWebData:
     def load(self, path):
         file = BinaryReader(path)
 
-        self.SIGNATURE = file.read_string(18)
-        if self.SIGNATURE != "TuanjieWebData1.0\0":
-            raise UWDTException("File is not a UnityWebData file")
+        self.SIGNATURE = file.read_string(16)
+        if self.SIGNATURE == "UnityWebData1.0\0":
+            pass  # Signature matches "UnityWebData1.0\0", no further action needed
+        else:
+            self.SIGNATURE += file.read_string(2)
+            if self.SIGNATURE != "TuanjieWebData1.0\0":
+                raise UWDTException("File is not a UnityWebData or TuanjieWebData file")
 
         self.BEGINNING_OFFSET = file.read_int()
 
@@ -106,7 +110,11 @@ class Packer:
 
         OUTPUT = open(self.output_path, "wb")
 
-        OUTPUT.write(bytes("TuanjieWebData1.0\0", "utf-8"))
+        tj3d = os.path.join(self.input_path, "data.tj3d")
+        if os.path.isfile(tj3d):
+            OUTPUT.write(bytes("TuanjieWebData1.0\0", "utf-8"))
+        else:
+            OUTPUT.write(bytes("UnityWebData1.0\0", "utf-8"))
 
         header_length = 0
         for file_name in targets:
